@@ -1,7 +1,7 @@
-// iverilog -o tb_parallel_mac.vvp tb_parallel_mac.v dot_product_accelerator.v FSM.v parallel_mac_datapath.v sequential_mac.v early_exit_mac.v
-// vvp tb_parallel_mac.vvp
+// iverilog -o tb_dot_product.vvp tb_dot_product.v dot_product_accelerator.v FSM.v parallel_mac.v seq_mac.v early_exit_mac.v
+// vvp tb_dot_product.vvp
 
-module tb_parallel_mac;
+module tb_dot_product;
 localparam U = 8;
 localparam N = 64;
 reg [7:0] x;
@@ -17,7 +17,8 @@ reg y_ready;
 wire [31:0] y;
 wire done;
 integer k;
-integer expected;
+integer expected_mode0;
+
 
 dot_product_accelerator #(
     .U(U),
@@ -50,7 +51,9 @@ initial begin
     w_valid = 0;
     stall_inject = 0;
     y_ready = 0;
-    expected = 0;
+
+    $display("Starting MODE1 test");
+
     @(negedge clk);
     start = 1;
     x_valid = 1;
@@ -69,24 +72,41 @@ initial begin
         w = (k + 1) * 2;
         stall_inject = 0;
     end
-    stall_inject = 0;
+
     wait(done == 1);
-    $display("expected=%0d y=%0d", 408, y);
+    $display("MODE1 expected=408 y=%0d", y);
     @(negedge clk);
     y_ready = 1;
     @(negedge clk);
     y_ready = 0;
+
+    mode = 2'b00;
+    expected_mode0 = N;
+    $display("Starting MODE0 test");
+    @(negedge clk);
+    start = 1;
+    x = 8'd1;
+    w = 8'd1;
+    x_valid = 1;
+    w_valid = 1;
+    @(negedge clk);
+    start = 0;
+
+    for (k = 0; k < N; k = k + 1) begin
+        @(negedge clk);
+        x = 8'd1;
+        w = 8'd1;
+    end
+
+    wait(done == 1);
+    $display("MODE0 expected=%0d y=%0d", expected_mode0, y);
+    @(negedge clk);
+    y_ready = 1;
+    @(negedge clk);
+    y_ready = 0;
+
     #20;
     $finish;
-end
-
-initial begin
-    $monitor("t=%0t rst=%0b start=%0b mode=%0b xv=%0b wv=%0b stall=%0b done=%0b yready=%0b x=%0d w=%0d y=%0d", $time, rst, start, mode, x_valid, w_valid, stall_inject, done, y_ready, x, w, y);
-end
-
-initial begin
-    $dumpfile("tb_parallel_mac.vcd");
-    $dumpvars(0, tb_parallel_mac);
 end
 
 endmodule

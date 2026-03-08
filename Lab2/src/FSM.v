@@ -6,7 +6,10 @@ module FSM(
     input stall_inject, 
     input x_valid, 
     input w_valid, 
-    input batch_complete, 
+    input mode0_done,
+    input mode1_done,
+    input mode2_done,
+    input early_exit_hit,
     input y_ready, 
     output reg clear_en,
     output reg accept_en,
@@ -24,6 +27,7 @@ reg [2:0] next_state;
 reg [1:0] mode_reg;
 wire input_ready;
 wire run_ok;
+reg compute_done;
 
 assign input_ready = x_valid && w_valid;
 assign run_ok = input_ready && !stall_inject;
@@ -39,6 +43,16 @@ always @(posedge clk) begin
 end
 
 always @(*) begin
+    compute_done = 1'b0;
+    case (mode_reg)
+        2'b00: compute_done = mode0_done;
+        2'b01: compute_done = mode1_done;
+        2'b10: compute_done = mode2_done || early_exit_hit;
+        default: compute_done = 1'b0;
+    endcase
+end
+
+always @(*) begin
     next_state = state;
     case (state)
         IDLE: begin
@@ -48,25 +62,15 @@ always @(*) begin
             next_state = WAIT_IN;
         end
         WAIT_IN: begin
-            if (mode_reg == 2'b01) begin
-                if (run_ok) begin
-                    if (batch_complete) next_state = HOLD_OUT;
-                    else next_state = COMPUTE;
-                end
-            end else begin
-                next_state = HOLD_OUT;
-            end
+            if (run_ok) next_state = COMPUTE;
         end
         COMPUTE: begin
-            if (mode_reg == 2'b01) begin
-                if (run_ok) begin
-                    if (batch_complete) next_state = HOLD_OUT;
-                    else next_state = COMPUTE;
-                end else begin
-                    next_state = WAIT_IN;
-                end
-            end else begin
+            if (!run_ok) begin
+                next_state = WAIT_IN;
+            end else if (compute_done) begin
                 next_state = HOLD_OUT;
+            end else begin
+                next_state = COMPUTE;
             end
         end
         HOLD_OUT: begin
@@ -88,10 +92,10 @@ always @(*) begin
             clear_en = 1'b1;
         end
         WAIT_IN: begin
-            if (mode_reg == 2'b01 && run_ok) accept_en = 1'b1;
+            if (run_ok) accept_en = 1'b1;
         end
         COMPUTE: begin
-            if (mode_reg == 2'b01 && run_ok) accept_en = 1'b1;
+            if (run_ok) accept_en = 1'b1;
         end
         HOLD_OUT: begin
             done = 1'b1;

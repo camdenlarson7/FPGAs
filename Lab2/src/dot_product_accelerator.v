@@ -22,7 +22,13 @@ wire [31:0] y_mode0;
 wire [31:0] y_mode1;
 wire [31:0] y_mode2;
 wire batch_complete_mode1;
+wire mode0_done;
+wire mode2_done;
+wire early_exit_hit;
 reg [1:0] mode_reg;
+
+assign mode2_done = 1'b1;
+assign early_exit_hit = 1'b0;
 
 always @(posedge clk) begin
     if (rst) mode_reg <= 2'b00;
@@ -41,15 +47,19 @@ FSM controller (
     .stall_inject(stall_inject),
     .x_valid(x_valid),
     .w_valid(w_valid),
-    .batch_complete(batch_complete_mode1),
+    .mode0_done(mode0_done),
+    .mode1_done(batch_complete_mode1),
+    .mode2_done(mode2_done),
+    .early_exit_hit(early_exit_hit),
     .y_ready(y_ready),
     .clear_en(clear_en),
     .accept_en(accept_en),
     .done(done)
 );
 
-sequential_mac #(.N(N)) mode0_datapath (
+seq_mac #(.N(N)) mode0_datapath (
     .y(y_mode0),
+    .mode0_done(mode0_done),
     .x(x_data),
     .w(w_data),
     .clear_en(clear_en),

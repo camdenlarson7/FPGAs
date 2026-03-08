@@ -32,108 +32,41 @@
 
 
 module seq_mac #(
-    parameter N = 64    // Number of MAC iterations
+    parameter N = 64
 )(
-    input  wire        clk,
-    input  wire        rst_n,           // Active-low synchronous reset
-
-    // Control
-    input  wire        start,
-    input  wire        stall_inject,
-    input  wire        y_ready,
-
-    // Data inputs
-    input  wire signed [7:0]  x,
-    input  wire signed [7:0]  w,
-    input  wire               x_valid,
-    input  wire               w_valid,
-
-    // Outputs
-    output reg  signed [31:0] y,
-    output reg                done
+    output [31:0] y,
+    output mode0_done,
+    input [7:0] x,
+    input [7:0] w,
+    input clear_en,
+    input accept_en,
+    input clk,
+    input rst
 );
 
     
-    // FSM state encoding (one-hot)
-    localparam [4:0]
-        IDLE     = 5'b00001,
-        CONFIG   = 5'b00010,
-        WAIT_IN  = 5'b00100,
-        COMPUTE  = 5'b01000,
-        HOLD_OUT = 5'b10000;
-
-    reg [4:0] state, next_state;
-
-    // Datapath registers
     reg signed [31:0] acc;
-    reg        [7:0]  k;
-
-    // Combinational signals
+    reg [7:0] k;
     wire signed [15:0] product;
     wire signed [31:0] product_ext;
-    wire               inputs_ready;
-    wire               k_done;
 
-    assign product      = x * w;
-    assign product_ext  = {{16{product[15]}}, product};
-    assign inputs_ready = x_valid & w_valid & ~stall_inject;
-
-    // k is the value BEFORE increment this cycle.
-    // COMPUTE increments k on the posedge, so we compare k == N-1
-    // to detect the final iteration - after increment k will be N.
-    assign k_done = (k == (N-1));
-
+    assign y = acc;
+    assign product = $signed(x) * $signed(w);
+    assign product_ext = {{16{product[15]}}, product};
+    assign mode0_done = (k == N);
 
     always @(posedge clk) begin
-        if (!rst_n) state <= IDLE;
-        else        state <= next_state;
-    end
-
-    // FSM: next-state logic
-    always @(*) begin
-        next_state = state;
-        case (state)
-            IDLE:     if (start)        next_state = CONFIG;
-            CONFIG:                     next_state = WAIT_IN;
-            WAIT_IN:  if (inputs_ready) next_state = COMPUTE;
-            COMPUTE:  if (k_done)       next_state = HOLD_OUT;
-                      else              next_state = WAIT_IN;
-            HOLD_OUT: if (y_ready)      next_state = IDLE;
-            default:                    next_state = IDLE;
-        endcase
-    end
-
-    // Datapath: accumulator and counter
-    always @(posedge clk) begin
-        if (!rst_n) begin
+        if (rst) begin
             acc <= 32'sd0;
-            k   <= 8'd00;
+            k <= 8'd0;
         end else begin
-            case (state)
-                CONFIG:  begin acc <= 32'sd0; k <= 8'd00;          end
-                COMPUTE: begin acc <= acc + product_ext; k <= k + 1'd1; end
-                default: begin end
-            endcase
-        end
-    end
-
-    // -------------------------------------------------------------------------
-    // Output logic
-    // -------------------------------------------------------------------------
-    always @(posedge clk) begin
-        if (!rst_n) begin
-            y    <= 32'sd0;
-            done <= 1'b0;
-        end else begin
-            case (state)
-                COMPUTE: begin
-                    // Latch final result on last MAC cycle
-                    if (k_done) y <= acc + product_ext;
-                end
-                HOLD_OUT: done <= 1'b1;
-                IDLE:     done <= 1'b0;
-                default:  done <= 1'b0;
-            endcase
+            if (clear_en) begin
+                acc <= 32'sd0;
+                k <= 8'd0;
+            end else if (accept_en && (k < N)) begin
+                acc <= acc + product_ext;
+                k <= k + 1'b1;
+            end
         end
     end
 
