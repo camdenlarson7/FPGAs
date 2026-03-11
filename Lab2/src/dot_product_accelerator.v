@@ -1,6 +1,7 @@
 module dot_product_accelerator #(
     parameter N = 64,
-    parameter U = 8
+    parameter U = 8,
+    parameter T = 32'sd5000; // change value of T for mode2 early exit threshold
 ) (
     output [31:0] y_data,
     output done,
@@ -27,8 +28,9 @@ wire mode2_done;
 wire early_exit_hit;
 reg [1:0] mode_reg;
 
-assign mode2_done = 1'b1;
-assign early_exit_hit = 1'b0;
+//assign mode2_done = 1'b1;
+//assign early_exit_hit = 1'b0;
+
 
 always @(posedge clk) begin
     if (rst) mode_reg <= 2'b00;
@@ -79,14 +81,16 @@ parallel_mac #(.U(U)) mode1_datapath (
     .rst(rst)
 );
 
-early_exit_mac #(.N(N)) mode2_datapath (
+early_exit_mac #(.N(N), .T(T)) mode2_datapath (
     .y(y_mode2),
     .x(x_data),
     .w(w_data),
+    .mode2_done(mode2_done),
+    .early_exit_hit(early_exit_hit),
     .clear_en(clear_en),
     .accept_en(accept_en),
     .clk(clk),
-    .rst(rst)
+    .rst(rst) // add in mode2_done()
 );
 
 endmodule
