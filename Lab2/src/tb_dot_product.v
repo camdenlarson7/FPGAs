@@ -4,6 +4,7 @@
 module tb_dot_product;
 localparam U = 8;
 localparam N = 64;
+localparam MODE2_T = 32;
 reg [7:0] x;
 reg [7:0] w;
 reg clk;
@@ -18,11 +19,13 @@ wire [31:0] y;
 wire done;
 integer k;
 integer expected_mode0;
+integer expected_mode2;
 
 
 dot_product_accelerator #(
     .U(U),
-    .N(N)
+    .N(N),
+    .MODE2_T(MODE2_T)
 ) dut (
     .y_data(y),
     .done(done),
@@ -100,6 +103,30 @@ initial begin
 
     wait(done == 1);
     $display("MODE0 expected=%0d y=%0d", expected_mode0, y);
+    @(negedge clk);
+    y_ready = 1;
+    @(negedge clk);
+    y_ready = 0;
+
+    mode = 2'b10;
+    expected_mode2 = 36;
+    $display("Starting MODE2 test");
+    @(negedge clk);
+    start = 1;
+    x = 8'd4;
+    w = 8'd3;
+    x_valid = 1;
+    w_valid = 1;
+    @(negedge clk);
+    start = 0;
+
+    while (done == 0) begin
+        @(negedge clk);
+        x = 8'd4;
+        w = 8'd3;
+    end
+
+    $display("MODE2 expected=%0d y=%0d", expected_mode2, y);
     @(negedge clk);
     y_ready = 1;
     @(negedge clk);

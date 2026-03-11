@@ -1,36 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 03/03/2026 02:13:04 PM
-// Design Name: 
-// Module Name: seq_mac
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-// Sequential MAC for Dot Product: y = sum(x_i * w_i) for i = 0 to N-1
-// N = 64, x/w: signed[7:0] (INT8), y: signed[31:0]
-//
-// FSM States: IDLE -> CONFIG -> WAIT_IN -> COMPUTE -> HOLD_OUT -> IDLE
-//
-// Interface signals:
-//   Inputs : clk, rst_n, start, x[7:0], w[7:0], x_valid, w_valid,
-//            stall_inject, y_ready
-//   Outputs: done, y[31:0]
-
-
-
 module seq_mac #(
     parameter N = 64
 )(

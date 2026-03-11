@@ -1,6 +1,7 @@
 module dot_product_accelerator #(
     parameter N = 64,
-    parameter U = 8
+    parameter U = 8,
+    parameter MODE2_T = 0
 ) (
     output [31:0] y_data,
     output done,
@@ -26,9 +27,6 @@ wire mode0_done;
 wire mode2_done;
 wire early_exit_hit;
 reg [1:0] mode_reg;
-
-assign mode2_done = 1'b1;
-assign early_exit_hit = 1'b0;
 
 always @(posedge clk) begin
     if (rst) mode_reg <= 2'b00;
@@ -79,8 +77,10 @@ parallel_mac #(.U(U)) mode1_datapath (
     .rst(rst)
 );
 
-early_exit_mac #(.N(N)) mode2_datapath (
+early_exit_mac #(.N(N), .T(MODE2_T)) mode2_datapath (
     .y(y_mode2),
+    .mode2_done(mode2_done),
+    .early_exit_hit(early_exit_hit),
     .x(x_data),
     .w(w_data),
     .clear_en(clear_en),
