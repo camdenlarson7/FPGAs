@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
-#include "HLS_LinearLayer.h"
+#include "LinearLayer.h"
 
 
 // Golden reference model 
