@@ -1,5 +1,5 @@
-#ifndef HLS_LINEAR_LAYER_H
-#define HLS_LINEAR_LAYER_H
+#ifndef LINEAR_LAYER_H
+#define LINEAR_LAYER_H
 
 #include "ap_int.h"
 
@@ -24,4 +24,4 @@ void baseline_inner_loop(data_t x[D], data_t w[D][O], out_t y[O]);
 // Requires ARRAY_PARTITION on w and temp_y for II=1
 void optimized_layer_pl(data_t x[D], data_t w[D][O], out_t y[O]);
 
-#endif // HLS_LINEAR_LAYER_H
+#endif // LINEAR_LAYER_H
