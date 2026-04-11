@@ -1,4 +1,4 @@
-#include "HLS_LinearLayer.h"
+#include "LinearLayer.h"
 
 
 // Baseline 1: Output-stationary (outer loop over j)
