@@ -26,10 +26,8 @@
 // Number of independent random test vectors to validate against
 #define NUM_TESTS 25
 
-// -----------------------------------------------------------------------
 // Golden (software reference) convolution
 // Bit-identical to the hardware implementations; used as ground truth.
-// -----------------------------------------------------------------------
 static void golden_conv(
     data_t X[H_IN][W_IN][C_IN],
     data_t W_k[K][K][C_IN][O_CH],
@@ -53,11 +51,9 @@ static void golden_conv(
     }
 }
 
-// -----------------------------------------------------------------------
 // Compare DUT output against golden reference.
 // Returns 1 if all elements match exactly, 0 otherwise.
 // Updates running max_err and sum_err.
-// -----------------------------------------------------------------------
 static int compare_outputs(
     acc_t Y_dut[H_OUT][W_OUT][O_CH],
     acc_t Y_ref[H_OUT][W_OUT][O_CH],
@@ -82,9 +78,7 @@ static int compare_outputs(
     return pass;
 }
 
-// -----------------------------------------------------------------------
-// Fill array with random INT8 values in [-64, 63] (avoids extreme products)
-// -----------------------------------------------------------------------
+// Fill array with random INT8 values in [-64, 63]
 static void rand_fill_X(data_t X[H_IN][W_IN][C_IN]) {
     for (int h = 0; h < H_IN; h++)
         for (int w = 0; w < W_IN; w++)
@@ -100,10 +94,8 @@ static void rand_fill_W(data_t W_k[K][K][C_IN][O_CH]) {
                     W_k[r][s][c][o] = (data_t)((rand() % 128) - 64);
 }
 
-// -----------------------------------------------------------------------
 // Run a suite of tests for one implementation.
 // Returns total pass count.
-// -----------------------------------------------------------------------
 typedef void (*conv_fn_t)(data_t[H_IN][W_IN][C_IN],
                           data_t[K][K][C_IN][O_CH],
                           acc_t[H_OUT][W_OUT][O_CH]);
@@ -149,9 +141,7 @@ static int run_suite(const char *name, conv_fn_t fn, unsigned int base_seed)
     return pass_count;
 }
 
-// -----------------------------------------------------------------------
 // main
-// -----------------------------------------------------------------------
 int main(void)
 {
     printf("=============================================================\n");
